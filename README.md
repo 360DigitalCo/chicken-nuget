@@ -16,7 +16,7 @@
 
 Every HTML tag is a Python object. Nest them. Chain them. Pass them to functions. Print them.
 
-**[▶ Try it in the browser](https://360digital.github.io/chicken-nuget)**
+**[▶ Try it in the browser](https://360digitalco.github.io/chicken-nuget)**
 
 ---
 
