@@ -9,10 +9,9 @@
 ---
 
 ```
- ___  _  _  _  ___ _  _  ___  _  _     _  _  _  _  ___  ___ _____
-/ __|| || || |/ __| || || __|| \| |    | \| || || |/ __|| __||_   _|
-| (__ | __ || || (__ | >< || _| | .` |    | .` || || || (_ || _|   | |
-\___||_||_||_|\___||_||_||___||_|\_|    |_|\_||_||_|\___||___| |_|
+╭─╴╷ ╷╷╭─╴╷╭ ╭─╴╭╮╷   ╭╮╷╷ ╷╭─╴╭─╴╶┬╴
+│  ├─┤││  ├┴╮├╴ │╰┤   │╰┤│ ││╶╮├╴  │ 
+╰─╴╵ ╵╵╰─╴╵ ╵╰─╴╵ ╵   ╵ ╵╰─╯╰─╯╰─╴ ╵ 
 ```
 
 Every HTML tag is a Python object. Nest them. Chain them. Pass them to functions. Print them.
@@ -173,4 +172,4 @@ Because `.nuget` is a package manager, chicken is delicious, and sometimes you j
 
 ---
 
-Made with ❤️ and Courier New by **[360Digital, Co.](https://github.com/360Digital)**
+Made with ❤️ and Courier New by **[360Digital, Co.](https://github.com/360DigitalCo)**
