@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chicken NuGet — Build HTML with Python</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0d0d0d;
+      --bg2:      #141414;
+      --bg3:      #1c1c1c;
+      --border:   #2a2a2a;
+      --amber:    #ffb347;
+      --amber2:   #cc7722;
+      --amber3:   #8a4f10;
+      --green:    #39ff14;
+      --green2:   #1a8f00;
+      --red:      #ff4444;
+      --muted:    #555;
+      --text:     #e8e0cc;
+      --text2:    #999;
+      --mono:     'Share Tech Mono', 'Courier New', monospace;
+      --display:  'VT323', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── scanline overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── header ── */
+    .site-header {
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+    }
+
+    .logo {
+      font-family: var(--display);
+      font-size: 28px;
+      color: var(--amber);
+      letter-spacing: 2px;
+      text-shadow: 0 0 8px var(--amber3);
+    }
+
+    .logo span { color: var(--text2); font-size: 16px; font-family: var(--mono); margin-left: 0.75rem; }
+
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: color 0.15s;
+    }
+    .nav-links a:hover { color: var(--amber); }
+
+    /* ── hero ── */
+    .hero {
+      padding: 4rem 2rem 3rem;
+      max-width: 860px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-ascii {
+      font-family: var(--display);
+      font-size: clamp(32px, 6vw, 62px);
+      color: var(--amber);
+      text-shadow: 0 0 20px var(--amber3);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-sub {
+      color: var(--text2);
+      font-size: 13px;
+      margin-bottom: 0.25rem;
+    }
+
+    .hero-tagline {
+      color: var(--green);
+      font-size: 16px;
+      margin: 1rem 0 2rem;
+      text-shadow: 0 0 6px var(--green2);
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 11px;
+      padding: 0.2rem 0.6rem;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.amber { border-color: var(--amber3); color: var(--amber); }
+    .badge.green { border-color: var(--green2); color: var(--green); }
+
+    /* ── pip install block ── */
+    .pip-block {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg3);
+      border: 1px solid var(--amber3);
+      padding: 0.6rem 1.2rem;
+      border-radius: 3px;
+      font-size: 15px;
+    }
+
+    .pip-block .prompt { color: var(--amber2); }
+    .pip-block .cmd    { color: var(--text); }
+
+    .copy-btn {
+      background: none;
+      border: 1px solid var(--muted);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+    /* ── main layout ── */
+    .compiler-section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-label::before { content: '//'; color: var(--amber2); }
+
+    /* ── editor + preview split ── */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      height: 520px;
+    }
+
+    @media (max-width: 768px) {
+      .split { grid-template-columns: 1fr; height: auto; }
+      .pane { height: 340px; }
+    }
+
+    .pane {
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane-bar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 0.4rem 0.75rem;
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .pane-bar .lang { color: var(--amber); font-size: 10px; letter-spacing: 1px; }
+
+    .run-btn {
+      background: var(--amber2);
+      color: #000;
+      border: none;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: bold;
+      padding: 0.25rem 0.75rem;
+      cursor: pointer;
+      border-radius: 2px;
+      letter-spacing: 0.5px;
+      transition: background 0.15s;
+    }
+    .run-btn:hover { background: var(--amber); }
+    .run-btn:active { transform: scale(0.97); }
+
+    #editor {
+      flex: 1;
+      width: 100%;
+      background: var(--bg2);
+      color: var(--text);
+      border: none;
+      resize: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 1rem;
+      outline: none;
+      tab-size: 2;
+    }
+
+    #editor::selection { background: var(--amber3); }
+
+    .preview-pane { position: relative; }
+
+    #preview-frame {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: #fff;
+    }
+
+    #html-output {
+      flex: 1;
+      overflow: auto;
+      padding: 1rem;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text2);
+      white-space: pre;
+      display: none;
+    }
+
+    /* ── output toggle ── */
+    .view-toggle {
+      display: flex;
+      gap: 0;
+    }
+
+    .vtab {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+
+    .vtab:first-child { border-radius: 2px 0 0 2px; }
+    .vtab:last-child  { border-radius: 0 2px 2px 0; border-left: none; }
+    .vtab.active      { background: var(--amber3); border-color: var(--amber2); color: var(--amber); }
+
+    /* ── status bar ── */
+    .status-bar {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      padding: 0.3rem 0.75rem;
+      font-size: 11px;
+      color: var(--text2);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 4px var(--green2);
+      flex-shrink: 0;
+    }
+
+    .status-dot.error { background: var(--red); box-shadow: 0 0 4px var(--red); }
+
+    #status-text { flex: 1; }
+    #char-count  { color: var(--muted); }
+
+    /* ── error output ── */
+    #error-box {
+      display: none;
+      background: #1a0000;
+      border: 1px solid #440000;
+      color: var(--red);
+      padding: 0.75rem 1rem;
+      font-size: 12px;
+      border-radius: 3px;
+      margin-top: 0.75rem;
+      white-space: pre-wrap;
+    }
+
+    /* ── snippets ── */
+    .snippets-row {
+      margin-top: 2.5rem;
+    }
+
+    .snippets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .snippet-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .snippet-card:hover {
+      border-color: var(--amber2);
+      background: #1e1a12;
+    }
+
+    .snippet-card .sc-title {
+      color: var(--amber);
+      font-size: 13px;
+      margin-bottom: 0.25rem;
+    }
+
+    .snippet-card .sc-desc {
+      color: var(--text2);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    /* ── docs / quick ref ── */
+    .docs-section {
+      max-width: 860px;
+      margin: 0 auto 5rem;
+      padding: 0 1.5rem;
+    }
+
+    .ref-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 1rem;
+    }
+
+    .ref-table th {
+      text-align: left;
+      padding: 0.4rem 0.75rem;
+      background: var(--bg3);
+      color: var(--text2);
+      border: 1px solid var(--border);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .ref-table td {
+      padding: 0.4rem 0.75rem;
+      border: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+
+    .ref-table tr:hover td { background: var(--bg3); }
+
+    code {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.35rem;
+      border-radius: 2px;
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 0.9em;
+    }
+
+    /* ── footer ── */
+    .site-footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .site-footer a { color: var(--text2); text-decoration: none; }
+    .site-footer a:hover { color: var(--amber); }
+
+    /* ── cursor blink on hero ── */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    .cursor { display: inline-block; animation: blink 1s step-end infinite; color: var(--amber); }
+
+    /* ── syntax highlight gloss (manual, no lib) ── */
+    .tok-kw   { color: #ff79c6; }
+    .tok-str  { color: #f1fa8c; }
+    .tok-fn   { color: #50fa7b; }
+    .tok-cmt  { color: #6272a4; }
+  </style>
+</head>
+<body>
+
+<!-- ── header ─────────────────────────────────────── -->
+<header class="site-header">
+  <div class="logo">🐔 CHICKEN NUGET<span>v0.1.0</span></div>
+  <nav class="nav-links">
+    <a href="#compiler">Try it</a>
+    <a href="#docs">Docs</a>
+    <a href="https://github.com/360Digital/chicken-nuget" target="_blank">GitHub</a>
+    <a href="https://pypi.org/project/chicken-nuget" target="_blank">PyPI</a>
+  </nav>
+</header>
+
+<!-- ── hero ───────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-ascii">CHICKEN NUGET<span class="cursor">_</span></div>
+  <div class="hero-sub">by 360Digital, Co.</div>
+  <div class="hero-tagline">// Build HTML with Python. No templates. No regrets.</div>
+
+  <div class="badge-row">
+    <span class="badge green">Python 3.9+</span>
+    <span class="badge amber">Zero dependencies</span>
+    <span class="badge">MIT License</span>
+    <span class="badge">pip installable</span>
+  </div>
+
+  <div class="pip-block">
+    <span class="prompt">$</span>
+    <span class="cmd" id="pip-cmd">pip install chicken-nuget</span>
+    <button class="copy-btn" onclick="copyPip(this)">COPY</button>
+  </div>
+</section>
+
+<!-- ── compiler ───────────────────────────────────── -->
+<section class="compiler-section" id="compiler">
+  <div class="section-label">inline compiler — runs entirely in your browser</div>
+
+  <div class="split">
+    <!-- editor pane -->
+    <div class="pane">
+      <div class="pane-bar">
+        <span>editor.py</span>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span class="lang">PYTHON</span>
+          <button class="run-btn" onclick="runCode()">▶ RUN</button>
+        </div>
+      </div>
+      <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off"
+        onkeydown="handleTab(event)" oninput="updateCharCount()"
+        placeholder="# Write Chicken NuGet code here…"></textarea>
+    </div>
+
+    <!-- preview pane -->
+    <div class="pane preview-pane">
+      <div class="pane-bar">
+        <span>output</span>
+        <div class="view-toggle">
+          <button class="vtab active" id="tab-preview" onclick="switchView('preview')">PREVIEW</button>
+          <button class="vtab"        id="tab-html"    onclick="switchView('html')">HTML</button>
+        </div>
+      </div>
+      <iframe id="preview-frame" sandbox="allow-scripts"></iframe>
+      <pre id="html-output"></pre>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text">ready — press ▶ RUN or Ctrl+Enter</span>
+    <span id="char-count">0 chars</span>
+  </div>
+
+  <div id="error-box"></div>
+
+  <!-- snippets -->
+  <div class="snippets-row">
+    <div class="section-label">example snippets — click to load</div>
+    <div class="snippets-grid" id="snippets-grid"></div>
+  </div>
+</section>
+
+<!-- ── quick reference ────────────────────────────── -->
+<section class="docs-section" id="docs">
+  <div class="section-label">quick reference</div>
+
+  <table class="ref-table">
+    <thead>
+      <tr><th>Pattern</th><th>Example</th><th>Output</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Basic tag</td>
+        <td><code>p("hello")</code></td>
+        <td><code>&lt;p&gt;hello&lt;/p&gt;</code></td>
+      </tr>
+      <tr>
+        <td>Attribute</td>
+        <td><code>a("link", href="#")</code></td>
+        <td><code>&lt;a href="#"&gt;link&lt;/a&gt;</code></td>
+      </tr>
+      <tr>
+        <td>class keyword</td>
+        <td><code>div(class_="box")</code></td>
+        <td><code>&lt;div class="box"&gt;&lt;/div&gt;</code></td>
+      </tr>
+      <tr>
+        <td>Boolean attr</td>
+        <td><code>input_(disabled=True)</code></td>
+        <td><code>&lt;input disabled&gt;</code></td>
+      </tr>
+      <tr>
+        <td>Nesting</td>
+        <td><code>ul(li("a"), li("b"))</code></td>
+        <td>Indented HTML tree</td>
+      </tr>
+      <tr>
+        <td>Chain</td>
+        <td><code>div().add(p("hi")).attr(id="x")</code></td>
+        <td>Fluent builder</td>
+      </tr>
+      <tr>
+        <td>style() helper</td>
+        <td><code>style(font_size="16px")</code></td>
+        <td><code>font-size: 16px;</code></td>
+      </tr>
+      <tr>
+        <td>Render</td>
+        <td><code>render_page(html(...))</code></td>
+        <td>Full page with DOCTYPE</td>
+      </tr>
+      <tr>
+        <td>Write to file</td>
+        <td><code>to_file(page, "index.html")</code></td>
+        <td>Saves to disk</td>
+      </tr>
+      <tr>
+        <td>Raw HTML</td>
+        <td><code>Raw("&lt;!-- comment --&gt;")</code></td>
+        <td>Passthrough, no wrapper</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── footer ─────────────────────────────────────── -->
+<footer class="site-footer">
+  <p>
+    Made with 🐔 by <a href="https://github.com/360Digital" target="_blank">360Digital, Co.</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/360Digital/chicken-nuget" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://pypi.org/project/chicken-nuget" target="_blank">PyPI</a>
+    &nbsp;·&nbsp;
+    MIT License
+  </p>
+</footer>
+
+<!-- ── Skulpt (Python in browser) ─────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════
+// Chicken NuGet — browser runtime
+// A minimal port of the Python library implemented in
+// JS so Skulpt can call it as a built-in module.
+// ════════════════════════════════════════════════════
+
+const VOID_TAGS = new Set([
+  "area","base","br","col","embed","hr","img","input",
+  "link","meta","param","source","track","wbr"
+]);
+
+const INDENT = "  ";
+
+class CnElement {
+  constructor(tag, children, attrs) {
+    this.tag      = tag;
+    this.children = children; // array of CnElement|string
+    this.attrs    = attrs;    // plain JS object
+  }
+
+  _attrStr() {
+    return Object.entries(this.attrs).map(([k,v]) => {
+      if (v === true)  return k;
+      if (v === false || v == null) return null;
+      return `${k}="${v}"`;
+    }).filter(Boolean).join(" ");
+  }
+
+  render(indent = 0) {
+    const pad = INDENT.repeat(indent);
+    const a   = this._attrStr();
+    const as  = a ? " " + a : "";
+
+    if (this.tag === "__raw__") {
+      return this.children.map(c =>
+        typeof c === "string" ? pad + c : c.render(indent)
+      ).join("\n");
+    }
+
+    if (VOID_TAGS.has(this.tag)) return `${pad}<${this.tag}${as}>`;
+    if (!this.children.length)   return `${pad}<${this.tag}${as}></${this.tag}>`;
+
+    if (this.children.length === 1 && typeof this.children[0] === "string") {
+      return `${pad}<${this.tag}${as}>${this.children[0]}</${this.tag}>`;
+    }
+
+    const inner = this.children.map(c =>
+      typeof c === "string"
+        ? INDENT.repeat(indent + 1) + c
+        : c.render(indent + 1)
+    ).join("\n");
+    return `${pad}<${this.tag}${as}>\n${inner}\n${pad}</${this.tag}>`;
+  }
+}
+
+// All tags we expose to Skulpt
+const ALL_TAGS = [
+  "html","head","body","title","base","link","meta","script",
+  "header","nav","main","article","section","aside","footer",
+  "h1","h2","h3","h4","h5","h6",
+  "div","p","ul","ol","li","dl","dt","dd",
+  "figure","figcaption","hr","br","pre","blockquote",
+  "a","em","strong","small","s","cite","code","kbd","samp",
+  "var","abbr","span","mark","time","sub","sup",
+  "img","iframe","video","audio","source","canvas","svg",
+  "table","caption","thead","tbody","tfoot","tr","th","td",
+  "form","label","button","select","option","optgroup",
+  "textarea","fieldset","legend","datalist","output","progress","meter",
+  "details","summary","dialog",
+];
+
+// ── Skulpt module registration ──────────────────────
+
+function makeSkulptModule(name) {
+  const mod = {};
+
+  // element factory: tag(*children, **attrs)
+  function makeFactory(tag) {
+    return new Sk.builtin.func(function() {
+      const children = [];
+      const attrs    = {};
+
+      for (let i = 0; i < arguments.length; i++) {
+        const arg = arguments[i];
+        if (arg instanceof Sk.builtin.str) {
+          children.push(arg.v);
+        } else if (arg instanceof Sk.builtin.object && arg.__class__ && arg._cn) {
+          children.push(arg._cn);
+        } else if (arg instanceof Sk.builtin.int_ || arg instanceof Sk.builtin.float_) {
+          children.push(String(Sk.ffi.remapToJs(arg)));
+        }
+      }
+
+      // kwargs come in as last argument if it's a plain object with $$
+      const lastArg = arguments[arguments.length - 1];
+      if (lastArg && lastArg.$d) {
+        lastArg.$d.mp$subscript && null; // dict — handled below
+      }
+
+      const el    = new CnElement(tag, children, attrs);
+      const pyObj = new Sk.builtin.object();
+      pyObj._cn   = el;
+
+      // .render() → str
+      pyObj.tp$getattr = (name) => {
+        if (name === "render") {
+          return new Sk.builtin.func(() => new Sk.builtin.str(el.render()));
+        }
+        if (name === "__str__") {
+          return new Sk.builtin.func(() => new Sk.builtin.str(el.render()));
+        }
+        return Sk.builtin.object.prototype.tp$getattr.call(pyObj, name);
+      };
+
+      pyObj.tp$str = () => new Sk.builtin.str(el.render());
+      return pyObj;
+    });
+  }
+
+  // Better factory using keyword args properly
+  function makeTagCallable(tag) {
+    const fn = new Sk.builtin.func(function() {
+      return buildElement(tag, Array.from(arguments));
+    });
+    fn.co_flags = 0x04 | 0x08; // *args, **kwargs
+    return fn;
+  }
+
+  for (const tag of ALL_TAGS) {
+    const pyName = tag === "input" ? "input_" : tag;
+    mod[pyName] = makeTagCallable(tag);
+  }
+
+  // Raw passthrough
+  mod["Raw"] = new Sk.builtin.func(function() {
+    const children = Array.from(arguments).map(a => Sk.ffi.remapToJs(a));
+    const el = new CnElement("__raw__", children.map(String), {});
+    return wrapEl(el);
+  });
+
+  // render(el, doctype=False, minify=False)
+  mod["render"] = new Sk.builtin.func(function(pyEl, pydoctype, pyminify) {
+    const el      = pyEl._cn;
+    const doctype = pydoctype  ? Sk.misceval.isTrue(pydoctype)  : false;
+    const minify  = pyminify   ? Sk.misceval.isTrue(pyminify)   : false;
+    let   out     = el.render();
+    if (minify)  out = out.replace(/\s+/g, " ").trim();
+    if (doctype) out = "<!DOCTYPE html>\n" + out;
+    return new Sk.builtin.str(out);
+  });
+
+  // render_page(el)
+  mod["render_page"] = new Sk.builtin.func(function(pyEl) {
+    const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+    return new Sk.builtin.str(out);
+  });
+
+  // style(**props) → str
+  mod["style"] = new Sk.builtin.func(function() {
+    // kwargs only
+    return new Sk.builtin.str("");
+  });
+
+  // to_file — no-op in browser, returns the html string
+  mod["to_file"] = new Sk.builtin.func(function(pyEl, pyPath) {
+    const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+    return new Sk.builtin.str(out);
+  });
+
+  // style_el alias
+  mod["style_el"] = makeTagCallable("style");
+
+  return mod;
+}
+
+// ── element builder with proper kwarg handling ──────
+
+function buildElement(tag, args) {
+  const children = [];
+  const attrs    = {};
+
+  for (const arg of args) {
+    if (arg == null) continue;
+
+    if (arg instanceof Sk.builtin.str) {
+      children.push(arg.v);
+    } else if (arg instanceof Sk.builtin.int_ || arg instanceof Sk.builtin.float_) {
+      children.push(String(Sk.ffi.remapToJs(arg)));
+    } else if (arg && arg._cn instanceof CnElement) {
+      children.push(arg._cn);
+    } else if (arg && arg.constructor && arg.constructor.name === "Object" && arg.hasOwnProperty("v")) {
+      // Skulpt kwarg dict
+      if (arg.v) {
+        for (const [k, v] of Object.entries(arg.v)) {
+          const attrKey = k.replace(/[_]+$/, "").replace(/_/g, "-");
+          if (v instanceof Sk.builtin.str)  attrs[attrKey] = v.v;
+          else if (v === Sk.builtin.bool.true$)  attrs[attrKey] = true;
+          else if (v === Sk.builtin.bool.false$) attrs[attrKey] = false;
+          else if (v instanceof Sk.builtin.int_) attrs[attrKey] = String(Sk.ffi.remapToJs(v));
+          else if (v instanceof Sk.builtin.float_) attrs[attrKey] = String(Sk.ffi.remapToJs(v));
+          else attrs[attrKey] = Sk.ffi.remapToJs(v);
+        }
+      }
+    } else if (arg && arg.$d) {
+      // dict object
+      try {
+        const keys = Sk.abstr.iter(arg);
+        let key;
+        while ((key = Sk.abstr.iternext(keys)) !== undefined) {
+          const k = Sk.ffi.remapToJs(key);
+          const v = Sk.abstr.objectGetItem(arg, key);
+          const attrKey = k.replace(/[_]+$/, "").replace(/_/g, "-");
+          attrs[attrKey] = Sk.ffi.remapToJs(v);
+        }
+      } catch(e) {}
+    }
+  }
+
+  return wrapEl(new CnElement(tag, children, attrs));
+}
+
+function wrapEl(el) {
+  const pyObj = new Sk.builtin.object();
+  pyObj._cn   = el;
+  pyObj.tp$str = () => new Sk.builtin.str(el.render());
+
+  pyObj.tp$getattr = function(name) {
+    if (name === "render") {
+      return new Sk.builtin.func(function() {
+        return new Sk.builtin.str(el.render());
+      });
+    }
+    if (name === "add") {
+      return new Sk.builtin.func(function() {
+        for (const a of arguments) {
+          if (a && a._cn) el.children.push(a._cn);
+          else if (a instanceof Sk.builtin.str) el.children.push(a.v);
+        }
+        return pyObj;
+      });
+    }
+    return Sk.builtin.object.prototype.tp$getattr.call(this, name);
+  };
+
+  return pyObj;
+}
+
+// ── Register the "chicken" module with Skulpt ────────
+
+const _chickenMod = makeSkulptModule("chicken");
+
+Sk.builtinFiles = Sk.builtinFiles || { files: {} };
+
+const _origConfigure = Sk.configure.bind(Sk);
+
+// Patch import to handle "chicken" and "chicken.render" etc.
+const originalImport = Sk.__future__;
+
+function setupSkulpt() {
+  Sk.configure({
+    output: (text) => { /* captured below */ },
+    read: (x) => {
+      if (Sk.builtinFiles && Sk.builtinFiles.files[x]) return Sk.builtinFiles.files[x];
+      throw new Sk.builtin.IOError("File not found: " + x);
+    },
+    __future__: Sk.python3,
+  });
+
+  // Override import to inject chicken module
+  const origImport = Sk.importModule;
+  Sk.importModule = function(name, dumpJS, canSuspend) {
+    if (name === "chicken" || name.startsWith("chicken.")) {
+      const mod = new Sk.builtin.module();
+      mod.$d = {};
+      for (const [k, v] of Object.entries(_chickenMod)) {
+        mod.$d[k] = v;
+      }
+      // inject print-captured render_page output
+      mod.$d["render_page"] = new Sk.builtin.func(function(pyEl) {
+        const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+        lastRenderedHTML = out;
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["render"] = new Sk.builtin.func(function(pyEl, pydoctype, pyminify) {
+        const doctype = pydoctype ? Sk.misceval.isTrue(pydoctype) : false;
+        let out = pyEl._cn.render();
+        if (doctype) out = "<!DOCTYPE html>\n" + out;
+        lastRenderedHTML = out;
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["to_file"] = new Sk.builtin.func(function(pyEl, pyPath) {
+        const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+        lastRenderedHTML = out;
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["style"] = new Sk.builtin.func(function() {
+        // grab kwargs — Skulpt passes them as last positional arg dict
+        const lastArg = arguments[arguments.length - 1];
+        const parts = [];
+        if (lastArg && lastArg.v) {
+          for (const [k, v] of Object.entries(lastArg.v)) {
+            const cssKey = k.replace(/[_]+$/, "").replace(/_/g, "-");
+            const val    = v instanceof Sk.builtin.str ? v.v : Sk.ffi.remapToJs(v);
+            parts.push(`${cssKey}: ${val}`);
+          }
+        }
+        const s = parts.join("; ") + (parts.length ? ";" : "");
+        return new Sk.builtin.str(s);
+      });
+      return mod;
+    }
+    return origImport.call(Sk, name, dumpJS, canSuspend);
+  };
+}
+
+// ── Runner ───────────────────────────────────────────
+
+let lastRenderedHTML = "";
+let currentView     = "preview";
+
+function runCode() {
+  const code   = document.getElementById("editor").value.trim();
+  const errBox = document.getElementById("error-box");
+  const dot    = document.getElementById("status-dot");
+  const status = document.getElementById("status-text");
+
+  errBox.style.display = "none";
+  lastRenderedHTML = "";
+
+  let printOutput = "";
+
+  setupSkulpt();
+
+  Sk.configure({
+    output: (text) => { printOutput += text; },
+    read:   (x)    => {
+      if (Sk.builtinFiles && Sk.builtinFiles.files[x]) return Sk.builtinFiles.files[x];
+      throw new Sk.builtin.IOError("File not found: " + x);
+    },
+    __future__: Sk.python3,
+  });
+
+  // Re-patch after reconfigure
+  const origImport2 = Sk.importModule;
+  Sk.importModule = function(name, dumpJS, canSuspend) {
+    if (name === "chicken" || name.startsWith("chicken.")) {
+      const mod = new Sk.builtin.module();
+      mod.$d = {};
+      for (const [k, v] of Object.entries(_chickenMod)) {
+        mod.$d[k] = v;
+      }
+      mod.$d["render_page"] = new Sk.builtin.func(function(pyEl) {
+        const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+        lastRenderedHTML = out;
+        printOutput += out + "\n";
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["render"] = new Sk.builtin.func(function(pyEl, pydoctype) {
+        const doctype = pydoctype ? Sk.misceval.isTrue(pydoctype) : false;
+        let out = pyEl._cn.render();
+        if (doctype) out = "<!DOCTYPE html>\n" + out;
+        lastRenderedHTML = out;
+        printOutput += out + "\n";
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["to_file"] = new Sk.builtin.func(function(pyEl) {
+        const out = "<!DOCTYPE html>\n" + pyEl._cn.render();
+        lastRenderedHTML = out;
+        printOutput += out + "\n";
+        return new Sk.builtin.str(out);
+      });
+      mod.$d["style"] = new Sk.builtin.func(function() {
+        const lastArg = arguments[arguments.length - 1];
+        const parts = [];
+        if (lastArg && lastArg.v) {
+          for (const [k, v] of Object.entries(lastArg.v)) {
+            const cssKey = k.replace(/[_]+$/, "").replace(/_/g, "-");
+            const val    = v instanceof Sk.builtin.str ? v.v : Sk.ffi.remapToJs(v);
+            parts.push(`${cssKey}: ${val}`);
+          }
+        }
+        const s = parts.join("; ") + (parts.length ? ";" : "");
+        return new Sk.builtin.str(s);
+      });
+      mod.$d["style_el"] = _chickenMod["style_el"];
+      return mod;
+    }
+    return origImport2.call(Sk, name, dumpJS, canSuspend);
+  };
+
+  const promise = Sk.misceval.asyncToPromise(() =>
+    Sk.importMainWithBody("<stdin>", false, code, true)
+  );
+
+  promise.then(() => {
+    const html = lastRenderedHTML || (printOutput.includes("<") ? printOutput.trim() : "");
+
+    if (html) {
+      updatePreview(html);
+      dot.className   = "status-dot";
+      status.textContent = "✓ rendered successfully";
+    } else if (printOutput.trim()) {
+      // plain text output — wrap it
+      const wrapped = `<html><body style="font-family:monospace;padding:1rem;background:#fff;color:#111">${printOutput.replace(/\n/g,"<br>")}</body></html>`;
+      updatePreview(wrapped);
+      dot.className   = "status-dot";
+      status.textContent = "✓ ran — no HTML element rendered";
+    } else {
+      dot.className   = "status-dot error";
+      status.textContent = "ran — no output produced";
+    }
+  }).catch(err => {
+    dot.className      = "status-dot error";
+    status.textContent = "error — see below";
+    errBox.style.display = "block";
+    errBox.textContent   = err.toString();
+  });
+}
+
+function updatePreview(html) {
+  const frame   = document.getElementById("preview-frame");
+  const htmlOut = document.getElementById("html-output");
+
+  lastRenderedHTML = html;
+
+  if (currentView === "preview") {
+    frame.srcdoc    = html;
+  } else {
+    htmlOut.textContent = html;
+  }
+}
+
+function switchView(v) {
+  currentView = v;
+  const frame   = document.getElementById("preview-frame");
+  const htmlOut = document.getElementById("html-output");
+
+  document.getElementById("tab-preview").classList.toggle("active", v === "preview");
+  document.getElementById("tab-html").classList.toggle("active", v === "html");
+
+  if (v === "preview") {
+    frame.style.display   = "block";
+    htmlOut.style.display = "none";
+    if (lastRenderedHTML) frame.srcdoc = lastRenderedHTML;
+  } else {
+    frame.style.display   = "none";
+    htmlOut.style.display = "block";
+    htmlOut.textContent   = lastRenderedHTML || "(run some code first)";
+  }
+}
+
+function handleTab(e) {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    const el    = e.target;
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    el.value    = el.value.substring(0, start) + "  " + el.value.substring(end);
+    el.selectionStart = el.selectionEnd = start + 2;
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+    e.preventDefault();
+    runCode();
+  }
+}
+
+function updateCharCount() {
+  const len = document.getElementById("editor").value.length;
+  document.getElementById("char-count").textContent = len + " chars";
+}
+
+function copyPip(btn) {
+  navigator.clipboard.writeText("pip install chicken-nuget");
+  btn.textContent = "COPIED!";
+  btn.classList.add("copied");
+  setTimeout(() => { btn.textContent = "COPY"; btn.classList.remove("copied"); }, 2000);
+}
+
+// ── Snippets ─────────────────────────────────────────
+
+const SNIPPETS = [
+  {
+    title: "Hello, world",
+    desc:  "Minimal page with doctype",
+    code:
+`from chicken import html, head, body, h1, p, meta, title, render_page
+
+page = html(
+    head(
+        meta(charset="utf-8"),
+        title("Hello"),
+    ),
+    body(
+        h1("Hello, world!"),
+        p("Built with Chicken NuGet."),
+    )
+)
+
+print(render_page(page))`,
+  },
+  {
+    title: "Styled card",
+    desc:  "Inline CSS via style()",
+    code:
+`from chicken import div, h2, p, a, render, style
+
+card = div(
+    h2("Chicken NuGet"),
+    p("Zero-dependency HTML builder for Python."),
+    a("Learn more →", href="https://github.com/360Digital/chicken-nuget"),
+    style=style(
+        background="#fffbe6",
+        border="2px solid #cc7722",
+        border_radius="8px",
+        padding="1.5rem",
+        font_family="Courier New, monospace",
+        max_width="400px",
+        margin="2rem auto",
+    )
+)
+
+print(render(card, doctype=True))`,
+  },
+  {
+    title: "Navigation bar",
+    desc:  "Header + nav with links",
+    code:
+`from chicken import header, nav, ul, li, a, span, render, style
+
+links = [("Home", "/"), ("Docs", "/docs"), ("GitHub", "https://github.com")]
+
+navbar = header(
+    nav(
+        span("🐔 NuGet",
+             style=style(font_weight="bold", font_size="1.2rem", color="#cc7722")),
+        ul(
+            *[li(a(label, href=href,
+                   style=style(color="#222", text_decoration="none")))
+              for label, href in links],
+            style=style(display="flex", gap="1.5rem",
+                        list_style="none", margin="0", padding="0"),
+        ),
+        style=style(
+            display="flex",
+            justify_content="space-between",
+            align_items="center",
+            padding="0.75rem 1.5rem",
+            background="#f5f5f0",
+            border_bottom="2px solid #ddd",
+        )
+    )
+)
+
+print(render(navbar, doctype=True))`,
+  },
+  {
+    title: "Data table",
+    desc:  "Table generated from a list",
+    code:
+`from chicken import table, thead, tbody, tr, th, td, render, style
+
+data = [
+    ("Alice", "Engineering", 95),
+    ("Bob",   "Design",      88),
+    ("Carol", "Marketing",   76),
+]
+
+tbl = table(
+    thead(tr(*[th(h, style=style(background="#cc7722", color="#fff",
+                                 padding="0.5rem 1rem",
+                                 text_align="left")) for h in ("Name","Dept","Score")])),
+    tbody(*[
+        tr(td(name, style=style(padding="0.4rem 1rem")),
+           td(dept, style=style(padding="0.4rem 1rem")),
+           td(str(score), style=style(padding="0.4rem 1rem",
+                                      font_weight="bold")))
+        for name, dept, score in data
+    ]),
+    style=style(border_collapse="collapse", font_family="Courier New, monospace",
+                margin="2rem auto")
+)
+
+print(render(tbl, doctype=True))`,
+  },
+  {
+    title: "Contact form",
+    desc:  "Form with inputs and button",
+    code:
+`from chicken import (
+    form, fieldset, legend, label, input_, textarea,
+    button, p, render, style
+)
+
+inp_style = style(
+    display="block", width="100%",
+    padding="0.4rem 0.6rem",
+    border="1px solid #ccc",
+    border_radius="3px",
+    font_family="Courier New, monospace",
+    font_size="13px",
+    margin_top="0.25rem",
+)
+
+f = form(
+    fieldset(
+        legend("Contact us", style=style(font_weight="bold", color="#cc7722")),
+        p(label("Name",  for_="name"),  input_(type="text",  id="name",  name="name",  style=inp_style)),
+        p(label("Email", for_="email"), input_(type="email", id="email", name="email", style=inp_style)),
+        p(label("Message", for_="msg"), textarea(id="msg", name="msg", rows="4",
+                                                  style=inp_style + "resize:vertical;")),
+        button("Send →", type="submit",
+               style=style(background="#cc7722", color="#fff",
+                            border="none", padding="0.5rem 1.2rem",
+                            cursor="pointer", font_family="Courier New, monospace",
+                            font_size="13px", border_radius="3px", margin_top="0.5rem")),
+        style=style(border="1px solid #ddd", padding="1.25rem", border_radius="4px"),
+    ),
+    style=style(font_family="Courier New, monospace", max_width="420px", margin="2rem auto"),
+    method="post", action="/contact"
+)
+
+print(render(f, doctype=True))`,
+  },
+  {
+    title: "Component pattern",
+    desc:  "Reusable Python functions as components",
+    code:
+`from chicken import div, h2, p, ul, li, a, render, style
+
+def card(title_text, body_text, link=None):
+    children = [
+        h2(title_text, style=style(margin_top="0", color="#cc7722")),
+        p(body_text),
+    ]
+    if link:
+        children.append(a("Learn more →", href=link,
+                           style=style(color="#226699")))
+    return div(*children,
+               style=style(
+                   border="1px solid #ddd",
+                   border_radius="6px",
+                   padding="1.25rem",
+                   background="#fff",
+                   font_family="Courier New, monospace",
+               ))
+
+def card_grid(*cards):
+    return div(*cards,
+               style=style(
+                   display="grid",
+                   grid_template_columns="repeat(2, 1fr)",
+                   gap="1rem",
+                   max_width="720px",
+                   margin="2rem auto",
+               ))
+
+page = card_grid(
+    card("Zero deps",    "Pure Python, nothing to install.",   "https://pypi.org"),
+    card("Composable",   "Elements are just objects.",          "#"),
+    card("Readable",     "Looks like your HTML, reads like Python.", "#"),
+    card("Void-aware",   "br, img, input — handled correctly.", "#"),
+)
+
+print(render(page, doctype=True))`,
+  },
+];
+
+function loadSnippet(code) {
+  document.getElementById("editor").value = code;
+  updateCharCount();
+  document.getElementById("editor").focus();
+  runCode();
+}
+
+function buildSnippetCards() {
+  const grid = document.getElementById("snippets-grid");
+  SNIPPETS.forEach(s => {
+    const card  = document.createElement("div");
+    card.className = "snippet-card";
+    card.innerHTML = `<div class="sc-title">${s.title}</div><div class="sc-desc">${s.desc}</div>`;
+    card.addEventListener("click", () => loadSnippet(s.code));
+    grid.appendChild(card);
+  });
+}
+
+// ── Init ─────────────────────────────────────────────
+
+buildSnippetCards();
+loadSnippet(SNIPPETS[0].code);
+</script>
+</body>
+</html>

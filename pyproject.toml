@@ -1,0 +1,33 @@
+[build-system]
+requires      = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name            = "chicken-nuget"
+version         = "0.1.0"
+description     = "Build HTML with Python. No templates. No regrets."
+readme          = "README.md"
+license         = { text = "MIT" }
+authors         = [{ name = "360Digital, Co." }]
+keywords        = ["html", "templating", "builder", "web", "dsl"]
+classifiers     = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.9"
+dependencies    = []
+
+[project.urls]
+Homepage   = "https://360digital.github.io/chicken-nuget"
+Repository = "https://github.com/360Digital/chicken-nuget"
+Issues     = "https://github.com/360Digital/chicken-nuget/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["chicken*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
