@@ -38,7 +38,7 @@
       min-height: 100vh;
     }
 
-    /* ── scanline overlay ── */
+    /* -- scanline overlay -- */
     body::before {
       content: '';
       position: fixed;
@@ -54,7 +54,7 @@
       z-index: 9999;
     }
 
-    /* ── header ── */
+    /* -- header -- */
     .site-header {
       border-bottom: 1px solid var(--border);
       padding: 0 2rem;
@@ -85,7 +85,7 @@
     }
     .nav-links a:hover { color: var(--amber); }
 
-    /* ── hero ── */
+    /* -- hero -- */
     .hero {
       padding: 4rem 2rem 3rem;
       max-width: 860px;
@@ -136,7 +136,7 @@
     .badge.amber { border-color: var(--amber3); color: var(--amber); }
     .badge.green { border-color: var(--green2); color: var(--green); }
 
-    /* ── pip install block ── */
+    /* -- pip install block -- */
     .pip-block {
       display: inline-flex;
       align-items: center;
@@ -165,7 +165,7 @@
     .copy-btn:hover { border-color: var(--amber); color: var(--amber); }
     .copy-btn.copied { border-color: var(--green); color: var(--green); }
 
-    /* ── main layout ── */
+    /* -- main layout -- */
     .compiler-section {
       max-width: 1200px;
       margin: 0 auto;
@@ -185,7 +185,7 @@
 
     .section-label::before { content: '//'; color: var(--amber2); }
 
-    /* ── editor + preview split ── */
+    /* -- editor + preview split -- */
     .split {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -277,7 +277,7 @@
       display: none;
     }
 
-    /* ── output toggle ── */
+    /* -- output toggle -- */
     .view-toggle {
       display: flex;
       gap: 0;
@@ -299,7 +299,7 @@
     .vtab:last-child  { border-radius: 0 2px 2px 0; border-left: none; }
     .vtab.active      { background: var(--amber3); border-color: var(--amber2); color: var(--amber); }
 
-    /* ── status bar ── */
+    /* -- status bar -- */
     .status-bar {
       background: var(--bg3);
       border: 1px solid var(--border);
@@ -452,12 +452,12 @@
   <nav class="nav-links">
     <a href="#compiler">Try it</a>
     <a href="#docs">Docs</a>
-    <a href="https://github.com/360Digital/chicken-nuget" target="_blank">GitHub</a>
+    <a href="https://github.com/360DigitalCo/chicken-nuget" target="_blank">GitHub</a>
     <a href="https://pypi.org/project/chicken-nuget" target="_blank">PyPI</a>
   </nav>
 </header>
 
-<!-- ── hero ───────────────────────────────────────── -->
+<!-- -- hero ---------------- -->
 <section class="hero">
   <div class="hero-ascii">CHICKEN NUGET<span class="cursor">_</span></div>
   <div class="hero-sub">by 360Digital, Co.</div>
@@ -477,7 +477,7 @@
   </div>
 </section>
 
-<!-- ── compiler ───────────────────────────────────── -->
+<!-- -- compiler -- -->
 <section class="compiler-section" id="compiler">
   <div class="section-label">inline compiler — runs entirely in your browser</div>
 
@@ -525,7 +525,7 @@
   </div>
 </section>
 
-<!-- ── quick reference ────────────────────────────── -->
+<!-- -- quick reference -- -->
 <section class="docs-section" id="docs">
   <div class="section-label">quick reference</div>
 
@@ -588,10 +588,10 @@
   </table>
 </section>
 
-<!-- ── footer ─────────────────────────────────────── -->
+<!-- -- footer ------------------------- -->
 <footer class="site-footer">
   <p>
-    Made with 🐔 by <a href="https://github.com/360Digital" target="_blank">360Digital, Co.</a>
+    Made with 🐔 by <a href="https://github.com/360DigitalCo" target="_blank">360Digital, Co.</a>
     &nbsp;·&nbsp;
     <a href="https://github.com/360Digital/chicken-nuget" target="_blank">GitHub</a>
     &nbsp;·&nbsp;
@@ -601,7 +601,7 @@
   </p>
 </footer>
 
-<!-- ── Skulpt (Python in browser) ─────────────────── -->
+<!-- -- Skulpt (Python in browser) -------------- -->
 <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
 
@@ -677,7 +677,7 @@ const ALL_TAGS = [
   "details","summary","dialog",
 ];
 
-// ── Skulpt module registration ──────────────────────
+// -- Skulpt module registration --
 
 function makeSkulptModule(name) {
   const mod = {};
@@ -781,7 +781,7 @@ function makeSkulptModule(name) {
   return mod;
 }
 
-// ── element builder with proper kwarg handling ──────
+// -- element builder with proper kwarg handling --
 
 function buildElement(tag, args) {
   const children = [];
@@ -853,7 +853,7 @@ function wrapEl(el) {
   return pyObj;
 }
 
-// ── Register the "chicken" module with Skulpt ────────
+// -- Register the "chicken" module with Skulpt --
 
 const _chickenMod = makeSkulptModule("chicken");
 
@@ -921,7 +921,7 @@ function setupSkulpt() {
   };
 }
 
-// ── Runner ───────────────────────────────────────────
+// -- Runner ------------
 
 let lastRenderedHTML = "";
 let currentView     = "preview";
@@ -1084,7 +1084,7 @@ function copyPip(btn) {
   setTimeout(() => { btn.textContent = "COPY"; btn.classList.remove("copied"); }, 2000);
 }
 
-// ── Snippets ─────────────────────────────────────────
+// -- Snippets --------------
 
 const SNIPPETS = [
   {
@@ -1115,7 +1115,7 @@ print(render_page(page))`,
 card = div(
     h2("Chicken NuGet"),
     p("Zero-dependency HTML builder for Python."),
-    a("Learn more →", href="https://github.com/360Digital/chicken-nuget"),
+    a("Learn more →", href="https://github.com/360DigitalCo/chicken-nuget"),
     style=style(
         background="#fffbe6",
         border="2px solid #cc7722",
@@ -1291,7 +1291,7 @@ function buildSnippetCards() {
   });
 }
 
-// ── Init ─────────────────────────────────────────────
+// -- Init ----------------
 
 buildSnippetCards();
 loadSnippet(SNIPPETS[0].code);
